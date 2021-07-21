@@ -31,7 +31,7 @@ def create_workshop_ou( name, scp_template, account_ids, cfn_template):
         move_account(a_id,ou_id) 
         account_details = setup_account(a_id, f'aws-{a_id}',cfn_template)
         user_account_info.append(account_details)
-    with open(f'workshop.{a_id}.out.json', 'w+') as out:
+    with open(f'workshop.out.json', 'w+') as out:
         json.dump( user_account_info, out, ensure_ascii=False, indent=4)
         
 
@@ -96,7 +96,7 @@ def setup_account( account_id, account_alias, cfn_baseline_template ):
 
     #Setup Account Admin
     iam_user_name = 'administrator'
-    iam_user_password = ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation,k=12))
+    iam_user_password = generate_password()
     iam_client.create_user(
         UserName=iam_user_name)
     iam_client.attach_user_policy(
@@ -174,6 +174,16 @@ def nuke_accounts(account_ids):
             raise Exception(stderr)
         print(stdout)
 
+def generate_password():
+    special_char = "!@%/()=?+.-"
+    pwlist = [
+        random.choice(special_char),
+        random.choice(string.digits),
+        random.choice(string.ascii_lowercase),
+        random.choice(string.ascii_uppercase),
+        ] + [ random.choice(string.ascii_letters + special_char + string.digits) for i in range(12)]
+    random.shuffle(pwlist)
+    return ''.join(pwlist)
 ##
 # RUN
 ##
