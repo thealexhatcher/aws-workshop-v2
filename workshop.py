@@ -7,6 +7,7 @@ import random
 import boto3
 import subprocess
 import yaml
+import json
 
 def create_workshop_ou( name, scp_template, account_ids, cfn_template):
     organizations_client = boto3.client('organizations')
@@ -24,11 +25,15 @@ def create_workshop_ou( name, scp_template, account_ids, cfn_template):
     organizations_client.attach_policy( 
         PolicyId=policy_id,
         TargetId=ou_id)
-    
+
+    user_account_info = []
     for a_id in account_ids:
         move_account(a_id,ou_id) 
         account_details = setup_account(a_id, f'aws-{a_id}',cfn_template)
-        print(account_details)
+        user_account_info.append(account_details)
+    with open(f'workshop.{a_id}.out.json', 'w+') as out:
+        json.dump( user_account_info, out, ensure_ascii=False, indent=4)
+        
 
 def remove_workshop_ou( name ):
     organizations_client = boto3.client('organizations')
@@ -82,14 +87,14 @@ def setup_account( account_id, account_alias, cfn_baseline_template ):
         aws_secret_access_key = assume_role_response['Credentials']['SecretAccessKey'],
         aws_session_token = assume_role_response['Credentials']['SessionToken'])
 
-    #DO: Setup Account Alias
+    #Setup Account Alias
     iam_client = session.client('iam')
     account_aliases = iam_client.list_account_aliases()['AccountAliases']
     for aa in account_aliases:
         iam_client.delete_account_alias(AccountAlias=aa)
     iam_client.create_account_alias(AccountAlias=account_alias)
 
-    #DO: Setup Account Admin
+    #Setup Account Admin
     iam_user_name = 'administrator'
     iam_user_password = ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation,k=12))
     iam_client.create_user(
@@ -105,6 +110,7 @@ def setup_account( account_id, account_alias, cfn_baseline_template ):
     access_key_id = access_key['AccessKeyId']
     secret_access_key = access_key['SecretAccessKey']
 
+    #Setup Baseline Cloudformation Stack
     cfn_client = session.client('cloudformation')
     cfn_template = open(cfn_baseline_template).read()
     cfn_stackname = 'org-member-baseline-stack'
@@ -129,20 +135,20 @@ def setup_account( account_id, account_alias, cfn_baseline_template ):
 def nuke_accounts(account_ids):
     sts_client = boto3.client('sts')
     this_account_id = sts_client.get_caller_identity()['Account'] 
-    config = {
-        'regions': [ 'global', 'us-east-1' ],
-        'account-blacklist': [ this_account_id ],
-        'accounts': {}
-    }
     for a_id in account_ids:
         #WRITE AWS-NUKE CONFIG
+        config = {
+            'regions': [ 'global', 'us-east-1' ],
+            'account-blacklist': [ this_account_id ],
+            'accounts': {}
+        }
         config['accounts'][a_id] = {
             'filters': {
                 'IAMRole': ['OrganizationAccountAccessRole'],
                 'IAMRolePolicy': ['OrganizationAccountAccessRole -> AdministratorAccess']
             }
         }
-        with open(f'aws-nuke.{a_id}.config.yml', 'w') as out:
+        with open(f'aws-nuke.{a_id}.config.yml', 'w+') as out:
             yaml.dump(config, out, default_flow_style=False)
 
         #GET ACCOUNT PERMISSIONS FOR NUKE

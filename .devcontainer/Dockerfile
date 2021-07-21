@@ -1,7 +1,7 @@
 FROM amazonlinux:latest
 ## SYSTEM SETUP
 RUN yum update -y
-RUN yum install -y sudo gcc g++ make git zip unzip tar bzip2 wget jq openssl uuid uidmap
+RUN yum install -y sudo gcc g++ make git zip unzip tar bzip2 wget jq openssl uuid uidmap python3
 RUN amazon-linux-extras install docker
 ## VSCODE USER Setup
 RUN adduser vscode
