@@ -1,0 +1,16 @@
+{
+	"name": "aws-account-vendor",
+	"dockerFile": "Dockerfile",
+	"runArgs": ["--privileged"],
+	"settings": { 
+		"terminal.integrated.shell.linux": "/bin/bash"
+	},
+	"extensions": [
+		"ms-azuretools.vscode-docker",
+		"ms-python.python"
+	],
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	"postCreateCommand": "(sudo dockerd > /tmp/dockerd.log 2>&1 ) &",
+	"remoteUser": "vscode"
+}
