@@ -202,8 +202,8 @@ account_ids = args.account_ids
 account_email = args.account_email
 account_name = args.account_name
 
-cfn_template = 'aws_account.baseline.yml'
-scp_template = 'aws_org.ou.scp.json'
+cfn_template = 'aws/aws_account.baseline.yml'
+scp_template = 'aws/aws_org.ou.scp.json'
 
 if action == 'ORG_CREATE': 
     organizations_client = boto3.client('organizations')
